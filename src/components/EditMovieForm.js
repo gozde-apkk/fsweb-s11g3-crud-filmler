@@ -3,8 +3,10 @@ import { useParams, useHistory } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 import axios from "axios";
+import useAxios, { REQ_TYPES } from "../hooks/useAxios";
 
 const EditMovieForm = (props) => {
+  const { id } = useParams();
   const { push } = useHistory();
 
   const { setMovies } = props;
@@ -15,7 +17,16 @@ const EditMovieForm = (props) => {
     metascore: 0,
     description: "",
   });
-
+  const [getMovie] = useAxios();
+  const [putMovie] = useAxios();
+  useEffect(() => {
+    getMovie({
+      endpoint: `movies/${id}`,
+      reqType: REQ_TYPES.GET,
+    }).then((res) => {
+      setMovie(res);
+    });
+  }, []);
   const handleChange = (e) => {
     setMovie({
       ...movie,
@@ -25,15 +36,14 @@ const EditMovieForm = (props) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    axios
-      .put(`http://localhost:9000/api/movies/${id}`, movie)
-      .then((res) => {
-        setMovies(res.data);
-        push(`/movies/${movie.id}`);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    putMovie({
+      endpoint: `movies/${id}`,
+      reqType: REQ_TYPES.PUT,
+      payload: movie,
+    }).then((res) => {
+      setMovies(res);
+      push(`/movies/${movie.id}`);
+    });
   };
 
   const { title, director, genre, metascore, description } = movie;
@@ -42,7 +52,9 @@ const EditMovieForm = (props) => {
     <div className="bg-white rounded-md shadow flex-1">
       <form onSubmit={handleSubmit}>
         <div className="p-5 pb-3 border-b border-zinc-200">
-          <h4 className="text-xl font-bold">Düzenleniyor <strong>{movie.title}</strong></h4>
+          <h4 className="text-xl font-bold">
+            Düzenleniyor <strong>{movie.title}</strong>
+          </h4>
         </div>
 
         <div className="px-5 py-3">
@@ -93,7 +105,7 @@ const EditMovieForm = (props) => {
         </div>
 
         <div className="px-5 py-4 border-t border-zinc-200 flex justify-end gap-2">
-          <Link to={`/movies/1`} className="myButton bg-zinc-500">
+          <Link to={`/movies/${id}`} className="myButton bg-zinc-500">
             Vazgeç
           </Link>
           <button

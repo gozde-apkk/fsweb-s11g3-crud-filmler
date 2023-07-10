@@ -1,36 +1,54 @@
 import React, { useEffect, useState } from "react";
 
-import { Route, Switch, Redirect } from "react-router-dom";
-import MovieList from './components/MovieList';
-import Movie from './components/Movie';
+import { Route, Switch, Redirect, useHistory } from "react-router-dom";
+import MovieList from "./components/MovieList";
+import Movie from "./components/Movie";
 
-import MovieHeader from './components/MovieHeader';
+import MovieHeader from "./components/MovieHeader";
 
-import FavoriteMovieList from './components/FavoriteMovieList';
+import FavoriteMovieList from "./components/FavoriteMovieList";
 
-import axios from 'axios';
+import axios from "axios";
+import EditMovieForm from "./components/EditMovieForm";
+import AddMovieForm from "./components/AddMovieForm";
+import useAxios, { REQ_TYPES } from "./hooks/useAxios";
 
 const App = (props) => {
+  const list = JSON.parse(localStorage.getItem("favliste"));
   const [movies, setMovies] = useState([]);
-  const [favoriteMovies, setFavoriteMovies] = useState([]);
+  const [favoriteMovies, setFavoriteMovies] = useState(list ? list : []);
+  const { push } = useHistory();
+  const [getMovies] = useAxios();
+  const [deleteMovies] = useAxios();
+
 
   useEffect(() => {
-    axios.get('http://localhost:9000/api/movies')
-      .then(res => {
-        setMovies(res.data);
-      })
-      .catch(err => {
-        console.log(err);
-      });
+    getMovies({
+      endpoint: "movies",
+      reqType: REQ_TYPES.GET,
+    }).then((res) => {
+      setMovies(res);
+    });
   }, []);
 
   const deleteMovie = (id) => {
-  }
+    deleteMovies({
+      endpoint: `movies/${id}`,
+      reqType: REQ_TYPES.DELETE,
+    }).then((res) => {
+      setMovies(res);
+      push("/movies");
+    });;
+  };
 
-  const addToFavorites = (movie) => {
-
-  }
-
+  const addToFavorites = (id) => {
+    favoriteMovies.find((f) => f.id === id)
+      ? setFavoriteMovies([...favoriteMovies])
+      : setFavoriteMovies([...favoriteMovies, movies.find((k) => k.id == id)]);
+  };
+  useEffect(() => {
+    localStorage.setItem("favliste", JSON.stringify(favoriteMovies));
+  }, [favoriteMovies]);
   return (
     <div>
       <nav className="bg-zinc-800 px-6 py-3">
@@ -43,11 +61,18 @@ const App = (props) => {
           <FavoriteMovieList favoriteMovies={favoriteMovies} />
 
           <Switch>
-            <Route path="/movies/edit/:id">
+            <Route exact path="/movies/edit/:id">
+              <EditMovieForm setMovies={setMovies} />
+            </Route>
+            <Route path="/movies/add">
+              <AddMovieForm setMovies={setMovies} />
             </Route>
 
             <Route path="/movies/:id">
-              <Movie />
+              <Movie
+                deleteMovie={deleteMovie}
+                addToFavorites={addToFavorites}
+              />
             </Route>
 
             <Route path="/movies">
@@ -64,6 +89,4 @@ const App = (props) => {
   );
 };
 
-
 export default App;
-
